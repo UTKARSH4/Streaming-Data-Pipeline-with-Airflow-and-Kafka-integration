@@ -7,12 +7,7 @@ import random
 from airflow import DAG
 from cassandra.cluster import Cluster
 
-# Change these variables
-YOUR_NAME = "uv"
-YOUR_PET_NAME = "Nevermore"
-NUMBER_OF_TREATS = (
-    5  # if your pet is very hungry, consider also changing `max_messages`
-)
+
 
 KAFKA_TOPIC = "test"
 
@@ -59,25 +54,7 @@ def prod_function(num_treats=100):
             json.dumps(i),
             json.dumps(message)
             )
-    # for i in range(num_treats):
-    #     final_treat = False
-    #     pet_mood_post_treat = random.choices(
 
-    #         ["content", "happy", "zoomy", "bouncy"],
-    #         weights=[1, 1, 1, 1],
-    #         k=1,
-    #     )[0]
-    #     if i + 1 == num_treats:
-    #         final_treat = True
-    #     yield (
-    #         json.dumps(i),
-    #         json.dumps(
-    #             {
-    #                 "pet_mood_post_treat": pet_mood_post_treat,
-    #                 "final_treat": final_treat,
-    #             }
-    #         ),
-    #     )
 
 
 def consume_function(message, name):
@@ -85,14 +62,32 @@ def consume_function(message, name):
     # message_content = json.loads(message.value())
     # pet_name = message_content["pet_name"]
     # pet_mood_post_treat = message_content["pet_mood_post_treat"]
-    # connect to cassandra
-    cluster = Cluster(protocol_version=5)
-    session=cluster.connect('mypsace')
-    rows=session.execute('select * from mypsace.consumer;')
-    for r in rows:
 
-        print(r.first_name)
-    print(message.value())
+
+    # connect to cassandra
+    cluster = Cluster(protocol_version=5) 
+    session=cluster.connect('mypsace')
+    message_content = json.loads(message.value())
+    if message_content["order_id"]!=23:
+        session.execute('Insert into mypsace.consumed (order_id,order_product_name,order_card_type,order_amount,order_country_name,order_city_name,order_ecommerce_website_name) values (' + 
+                         str(message_content["order_id"]) + ",'"+ 
+                         message_content["order_product_name"] + "','"+  
+                         message_content["order_card_type"] + "','"+   
+                         str(message_content["order_amount"]) + "','"+   
+                         message_content["order_country_name"] + "','"+  
+                         message_content["order_city_name"] + "','"+  
+                         message_content["order_ecommerce_website_name"] +"');"
+                         )
+    print("Inserted record with order_id:",message_content["order_id"])
+    # print('Insert into mypsace.consumed (order_id,order_product_name,order_card_type,order_amount,order_country_name,order_city_name,order_ecommerce_website_name) values (' + 
+    #                      str(message_content["order_id"]) + ",'"+ 
+    #                      message_content["order_product_name"] + "','"+  
+    #                      message_content["order_card_type"] + "','"+   
+    #                      str(message_content["order_amount"]) + "','"+   
+    #                      message_content["order_country_name"] + "','"+  
+    #                      message_content["order_city_name"] + "','"+  
+    #                      message_content["order_ecommerce_website_name"] +"');'" 
+    #                      )
 
 
 # @dag(
